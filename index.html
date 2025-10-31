@@ -58,7 +58,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh; /* Makes each section fill the screen height */
-            padding: 40px;
+            padding: 40px 20px; /* (MODIFIED) Reduced horizontal padding for all sizes */
             text-align: center;
             position: relative;
             overflow: hidden; /* Hides any overflowing animation elements */
@@ -94,14 +94,14 @@
         .hero h1 {
             /* 'Great Vibes' is our beautiful cursive font */
             font-family: 'Great Vibes', cursive;
-            font-size: 6rem; /* Large font size for the name */
+            font-size: 5rem; /* (MODIFIED) Slightly smaller base font */
             margin-bottom: 20px;
             color: #f7b2c5; /* A soft, celebratory pink */
             text-shadow: 0 0 15px rgba(247, 178, 197, 0.7);
         }
 
         .hero p {
-            font-size: 1.5rem;
+            font-size: 1.3rem; /* (MODIFIED) Slightly smaller base font */
             font-weight: 400;
         }
 
@@ -245,6 +245,34 @@
             }
         }
 
+        /* (NEW) Further adjustments for very small screens */
+        @media (max-width: 400px) {
+            .hero h1 {
+                font-size: 3.5rem; /* Even smaller */
+            }
+            .hero p {
+                font-size: 1.1rem;
+            }
+            .wish h2 {
+                font-size: 3rem; /* Scale down other headers */
+            }
+            .memories h2 {
+                font-size: 2.8rem;
+            }
+            .content-box h2 {
+                font-size: 2.5rem;
+            }
+            /* (NEW) Make modal padding smaller on phones */
+            .modal-content {
+                padding: 20px; 
+                width: 90%; /* Ensure it doesn't touch edges */
+            }
+            /* (NEW) Make modal title smaller on phones */
+            .modal-content h2 {
+                font-size: 2.5rem;
+            }
+        }
+
         /* --- 9. Ambient Animation (NEW) --- */
         .particle-container {
             position: absolute;
@@ -385,10 +413,21 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
             z-index: 2000; /* On top of everything */
-            display: none; /* Hidden by default */
+            /* (MODIFIED) Changed from 'display: none' for fade animation */
+            opacity: 0;
+            visibility: hidden;
+            display: flex; /* Keep flex on */
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(5px); /* Nice blur effect */
+            /* (NEW) Add transition for fade */
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        /* (NEW) This class now controls showing the modal */
+        .cake-modal.open {
+            opacity: 1;
+            visibility: visible;
         }
 
         .modal-content {
@@ -658,340 +697,365 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     
     <script>
-        // --- 1. Initialize the AOS (Animate on Scroll) library ---
-        // This will make elements animate as you scroll to them.
-        AOS.init({
-            duration: 1000, // Animation duration in milliseconds
-            once: true,     // Whether animation should happen only once
-            offset: 100,    // Triggers animation a bit before it's in view
-        });
+        // --- This wrapper ensures all code runs only after the page is fully loaded ---
+        window.addEventListener('DOMContentLoaded', (event) => {
 
-// ... existing code ... -->
-        // --- 2. "Touch of Love" Heart Animation ---
+            // --- 1. Initialize the AOS (Animate on Scroll) library ---
+            // This will make elements animate as you scroll to them.
+            AOS.init({
+                duration: 1000, // Animation duration in milliseconds
+                once: true,     // Whether animation should happen only once
+                offset: 100,    // Triggers animation a bit before it's in view
+            });
 
-        // Get the canvas element from our HTML
-        const canvas = document.getElementById('loveCanvas');
-        const ctx = canvas.getContext('2d');
+            // --- 2. "Touch of Love" Heart Animation ---
 
-        // Set the canvas to fill the entire window
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+            // Get the canvas element from our HTML
+            const canvas = document.getElementById('loveCanvas');
+            const ctx = canvas.getContext('2d');
 
-        // Array to store all the heart particles
-        let particles = [];
-        
-        // Heart colors - we'll pick from these randomly
-        const heartColors = [
-            '#f7b2c5', // soft pink
-            '#f78fa7', // medium pink
-            '#f06292', // bright pink
-            '#e91e63'  // hot pink
-        ];
-        
-        // (NEW) Confetti colors
-        const confettiColors = [
-            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
-            '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50',
-            '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
-        ];
-
-        // Function to draw a single heart shape
-        // This is a path that draws a heart
-        function drawHeart(x, y, size, opacity, color) {
-            ctx.fillStyle = color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
-            ctx.beginPath();
-            ctx.moveTo(x, y + size / 4);
-            ctx.quadraticCurveTo(x, y, x + size / 4, y);
-            ctx.quadraticCurveTo(x + size / 2, y, x + size / 2, y + size / 4);
-            ctx.quadraticCurveTo(x + size / 2, y, x + (size * 3) / 4, y);
-            ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
-            ctx.quadraticCurveTo(x + size, y + size / 2, x + (size * 3) / 4, y + (size * 3) / 4);
-            ctx.lineTo(x + size / 2, y + size);
-            ctx.lineTo(x + size / 4, y + (size * 3) / 4);
-            ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4);
-            ctx.fill();
-            ctx.closePath();
-        }
-        
-        // (NEW) Function to draw a single confetti particle
-        function drawConfetti(p) {
-            ctx.save(); // Save the current canvas state
-            ctx.translate(p.x, p.y); // Move to the particle's position
-            ctx.rotate(p.angle); // Rotate the particle
-            ctx.fillStyle = p.color.replace(')', `, ${p.opacity})`).replace('rgb', 'rgba');
-            // Draw a rectangle for the confetti
-            ctx.fillRect(-p.size / 2, -p.sizeH / 2, p.size, p.sizeH);
-            ctx.restore(); // Restore the canvas state
-        }
-
-        // Function to create a burst of hearts at a specific location
-        function createHearts(event) {
-            // Get the mouse or touch position
-            // We check for 'touches' for mobile, and 'clientX/Y' for desktop
-            let x = event.clientX || (event.touches && event.touches[0].clientX);
-            let y = event.clientY || (event.touches && event.touches[0].clientY);
-            
-            // Just in case the event is not a standard mouse/touch event
-            if (x === undefined || y === undefined) {
-                return;
-            }
-
-            // Number of hearts to create in one burst
-            const heartCount = 20;
-
-            for (let i = 0; i < heartCount; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    size: Math.random() * 15 + 5, // Random size
-                    // Random speeds for x and y to spread them out
-                    speedX: Math.random() * 4 - 2, // -2 to +2
-                    speedY: Math.random() * 4 - 2, // -2 to +2
-                    opacity: 1,
-                    life: 1, // Lifespan of the particle (1 = 100%)
-                    color: heartColors[Math.floor(Math.random() * heartColors.length)], // Pick a random color
-                    type: 'heart' // (NEW) Specify particle type
-                });
-            }
-        }
-        
-        // (NEW) Function to create a burst of confetti
-        function triggerConfetti() {
-            const confettiCount = 200; // Lots of confetti!
-            const explosionX = canvas.width / 2;
-            const explosionY = canvas.height / 2;
-
-            for (let i = 0; i < confettiCount; i++) {
-                const angle = Math.random() * Math.PI * 2; // Random angle
-                const speed = Math.random() * 8 + 4; // Random speed (4-12)
-                
-                particles.push({
-                    x: explosionX,
-                    y: explosionY,
-                    size: Math.random() * 8 + 4, // Random width
-                    sizeH: Math.random() * 6 + 4, // Random height
-                    speedX: Math.cos(angle) * speed,
-                    speedY: Math.sin(angle) * speed - 4, // Add an upward boost
-                    opacity: 1,
-                    life: 1.5, // Lives a bit longer
-                    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-                    type: 'confetti', // (NEW) Specify particle type
-                    angle: Math.random() * Math.PI * 2, // Random rotation
-                    spin: Math.random() * 0.2 - 0.1 // Random spin speed
-                });
-            }
-        }
-
-        // The main animation loop that runs every frame
-        function animate() {
-            // Clear the canvas on each frame so we can draw fresh hearts
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            for (let i = 0; i < particles.length; i++) {
-                let p = particles[i];
-                
-                // Update particle's position based on its speed
-                p.x += p.speedX;
-                p.y += p.speedY;
-                
-                // Add a little "gravity" to make them fall
-                p.speedY += 0.05;
-                
-                // (NEW) Add friction/drag
-                p.speedX *= 0.99;
-                p.speedY *= 0.99;
-                
-                // Decrease life and opacity to make them fade out
-                p.life -= 0.015; // Fade a bit slower
-                p.opacity -= 0.015;
-
-                // (NEW) Update rotation for confetti
-                if (p.type === 'confetti') {
-                    p.angle += p.spin;
-                }
-
-                // If the particle is still "alive", draw it
-                if (p.life > 0) {
-                    // (NEW) Check particle type to decide how to draw
-                    if (p.type === 'heart') {
-                        drawHeart(p.x, p.y, p.size, p.opacity, p.color);
-                    } else if (p.type === 'confetti') {
-                        drawConfetti(p);
-                    }
-                } else {
-                    // Remove the "dead" particle from our array
-                    particles.splice(i, 1);
-                    i--; // Adjust index after removal to avoid skipping a particle
-                }
-            }
-
-            // Request the next frame to continue the animation
-            requestAnimationFrame(animate);
-        }
-
-        // Listen for a click (desktop) or a touch (mobile) to trigger the hearts
-        // We set 'pointer-events: auto' on the body to make sure it captures the click
-        document.body.style.pointerEvents = 'auto';
-        window.addEventListener('click', createHearts);
-        window.addEventListener('touchstart', createHearts);
-
-        // Start the animation loop!
-        animate();
-
-// ... existing code ... -->
-        window.addEventListener('resize', () => {
+            // Set the canvas to fill the entire window
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        });
 
-        // --- 3. (NEW) Birthday Cake Celebration ---
-        
-        // Get all the new elements
-        const celebrateBtn = document.getElementById('celebrateBtn');
-        const cakeModal = document.getElementById('cakeModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const flames = document.querySelectorAll('.flame');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalInstruction = document.getElementById('modalInstruction');
-        const birthdayCake = document.getElementById('birthdayCake'); // (NEW)
-        
-        let candlesOut = 0;
-        
-        // Create the music synth
-        const synth = new Tone.Synth().toDestination();
-
-        // Notes for "Happy Birthday"
-        const birthdayMelody = [
-            { note: 'G4', duration: '8n', time: '0:0' },
-            { note: 'G4', duration: '8n', time: '0:1' },
-            { note: 'A4', duration: '4n', time: '0:2' },
-            { note: 'G4', duration: '4n', time: '0:3' },
-            { note: 'C5', duration: '4n', time: '1:0' },
-            { note: 'B4', duration: '2n', time: '1:2' },
-
-            { note: 'G4', duration: '8n', time: '2:0' },
-            { note: 'G4', duration: '8n', time: '2:1' },
-            { note: 'A4', duration: '4n', time: '2:2' },
-            { note: 'G4', duration: '4n', time: '2:3' },
-            { note: 'D5', duration: '4n', time: '3:0' },
-            { note: 'C5', duration: '2n', time: '3:2' },
-
-            { note: 'G4', duration: '8n', time: '4:0' },
-            { note: 'G4', duration: '8n', time: '4:1' },
-            { note: 'G5', duration: '4an', time: '4:2' },
-            { note: 'E5', duration: '4n', time: '4:3' },
-            { note: 'C5', duration: '4n', time: '5:0' },
-            { note: 'B4', duration: '4n', time: '5:1' },
-            { note: 'A4', duration: '2n', time: '5:2' },
-
-            { note: 'F5', duration: '8n', time: '6:0' },
-            { note: 'F5', duration: '8n', time: '6:1' },
-            { note: 'E5', duration: '4n', time: '6:2' },
-            { note: 'C5', duration: '4n', time: '6:3' },
-            { note: 'D5', duration: '4n', time: '7:0' },
-            { note: 'C5', duration: '2n', time: '7:2' },
-        ];
-        
-        // Create the sequence
-        const birthdaySong = new Tone.Part((time, value) => {
-            synth.triggerAttackRelease(value.note, value.duration, time);
-        }, birthdayMelody);
-        
-        // Loop the song
-        birthdaySong.loop = true;
-        birthdaySong.loopEnd = '8m'; // Loop the full 8 measures
-        Tone.Transport.bpm.value = 100; // Set a nice tempo
-
-        // Function to open the cake modal
-        async function openCakeModal() {
-            // Must start Tone.js on a user gesture
-            await Tone.start();
+            // Array to store all the heart particles
+            let particles = [];
             
-            // Reset state
-            modalTitle.innerText = "Make a wish...";
-            modalInstruction.innerText = "Click the flames to blow them out!";
-            flames.forEach(f => f.classList.remove('flame-out'));
-            birthdayCake.classList.remove('clickable'); // (NEW)
-            birthdayCake.classList.remove('cut'); // (NEW)
-            birthdayCake.removeEventListener('click', cutTheCake); // (NEW)
-            candlesOut = 0;
+            // Heart colors - we'll pick from these randomly
+            const heartColors = [
+                '#f7b2c5', // soft pink
+                '#f78fa7', // medium pink
+                '#f06292', // bright pink
+                '#e91e63'  // hot pink
+            ];
             
-            cakeModal.style.display = 'flex';
-            
-            // Start the music
-            Tone.Transport.start();
-            birthdaySong.start(0);
-        }
+            // (NEW) Confetti colors
+            const confettiColors = [
+                '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+                '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50',
+                '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
+            ];
 
-        // Function to close the cake modal
-        function closeCakeModal() {
-            cakeModal.style.display = 'none';
-            // Stop the music
-            Tone.Transport.stop();
-            birthdaySong.stop(0);
-        }
-
-        // (NEW) Function to handle the cake cutting
-        function cutTheCake() {
-            // Add cut animation
-            birthdayCake.classList.add('cut');
-            birthdayCake.classList.remove('clickable'); // No more clicks
-
-            // Final message
-            modalTitle.innerText = "Happy Birthday, Love!";
-            modalInstruction.innerText = "Your wish is on its way... ❤️";
-            
-            // Trigger the confetti explosion!
-            triggerConfetti();
-            
-            // Automatically close the modal after 2.5 seconds
-            setTimeout(closeCakeModal, 2500);
-
-            // Remove the listener
-            birthdayCake.removeEventListener('click', cutTheCake);
-            birthdayCake.removeEventListener('touchstart', cutTheCake); // (NEW)
-        }
-
-        // (MODIFIED) Helper to prevent double events on touch
-        function handleInteraction(event, action) {
-            event.preventDefault(); // Stop click from firing after touch
-            action(event); // Run the desired function
-        }
-
-        // Event listener for the celebrate button
-       celebrateBtn.addEventListener('click', (e) => handleInteraction(e, openCakeModal));
-       celebrateBtn.addEventListener('touchstart', (e) => handleInteraction(e, openCakeModal));
-        
-        // Event listener for the close button
-       closeModalBtn.addEventListener('click', (e) => handleInteraction(e, closeCakeModal));
-       closeModalBtn.addEventListener('touchstart', (e) => handleInteraction(e, closeCakeModal));
-
-        // (NEW) Function to handle blowing out a flame
-        function blowOutFlame(event) {
-            // 'this' will be the flame element that was clicked/touched
-            if (!this.classList.contains('flame-out')) {
-                this.classList.add('flame-out');
-                candlesOut++;
+            // Function to draw a single heart shape
+            // This is a path that draws a heart
+            function drawHeart(x, y, size, opacity, color) {
+                // (MODIFIED) More robust color parsing for rgba
+                let safeColor = color.startsWith('rgb') ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${opacity})`;
+                if (color.startsWith('rgb') && color.includes(',')) {
+                     safeColor = color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+                }
+                ctx.fillStyle = safeColor;
+                ctx.beginPath();
+                ctx.moveTo(x, y + size / 4);
+                ctx.quadraticCurveTo(x, y, x + size / 4, y);
+                ctx.quadraticCurveTo(x + size / 2, y, x + size / 2, y + size / 4);
+                ctx.quadraticCurveTo(x + size / 2, y, x + (size * 3) / 4, y);
+                ctx.quadraticCurveTo(x + size, y, x + size, y + size / 4);
+                ctx.quadraticCurveTo(x + size, y + size / 2, x + (size * 3) / 4, y + (size * 3) / 4);
+                ctx.lineTo(x + size / 2, y + size);
+                ctx.lineTo(x + size / 4, y + (size * 3) / 4);
+                ctx.quadraticCurveTo(x, y + size / 2, x, y + size / 4);
+                ctx.fill();
+                ctx.closePath();
             }
             
-            // Check if all candles are out
-            if (candlesOut === flames.length) {
-                modalTitle.innerText = "Wish Made!";
-                modalInstruction.innerText = "Now, tap the cake to cut it!";
+            // (NEW) Function to draw a single confetti particle
+            function drawConfetti(p) {
+                ctx.save(); // Save the current canvas state
+                ctx.translate(p.x, p.y); // Move to the particle's position
+                ctx.rotate(p.angle); // Rotate the particle
                 
-                birthdayCake.classList.add('clickable');
-                // (MODIFIED) Add both click and touch listeners for the cake
-                birthdayCake.addEventListener('click', (e) => handleInteraction(e, cutTheCake));
-                birthdayCake.addEventListener('touchstart', (e) => handleInteraction(e, cutTheCake));
+                // (MODIFIED) More robust color parsing for rgba
+                let safeColor = p.color.startsWith('rgb') ? p.color : `rgba(${parseInt(p.color.slice(1, 3), 16)}, ${parseInt(p.color.slice(3, 5), 16)}, ${parseInt(p.color.slice(5, 7), 16)}, ${p.opacity})`;
+                if (p.color.startsWith('rgb') && p.color.includes(',')) {
+                    safeColor = p.color.replace(')', `, ${p.opacity})`).replace('rgb', 'rgba');
+                }
+                ctx.fillStyle = safeColor;
+                
+                // Draw a rectangle for the confetti
+                ctx.fillRect(-p.size / 2, -p.sizeH / 2, p.size, p.sizeH);
+                ctx.restore(); // Restore the canvas state
             }
-        }
 
-        // Event listeners for each flame
-        flames.forEach(flame => {
-           // (MODIFIED) Add both click and touch listeners for the flames
-           flame.addEventListener('click', (e) => handleInteraction(e, blowOutFlame.bind(flame)));
-           flame.addEventListener('touchstart', (e) => handleInteraction(e, blowOutFlame.bind(flame)));
-        });
+            // Function to create a burst of hearts at a specific location
+            function createHearts(event) {
+                // Get the mouse or touch position
+                // We check for 'touches' for mobile, and 'clientX/Y' for desktop
+                let x = event.clientX || (event.touches && event.touches[0].clientX);
+                let y = event.clientY || (event.touches && event.touches[0].clientY);
+                
+                // Just in case the event is not a standard mouse/touch event
+                if (x === undefined || y === undefined) {
+                    return;
+                }
+
+                // Number of hearts to create in one burst
+                const heartCount = 20;
+
+                for (let i = 0; i < heartCount; i++) {
+                    particles.push({
+                        x: x,
+                        y: y,
+                        size: Math.random() * 15 + 5, // Random size
+                        // Random speeds for x and y to spread them out
+                        speedX: Math.random() * 4 - 2, // -2 to +2
+                        speedY: Math.random() * 4 - 2, // -2 to +2
+                        opacity: 1,
+                        life: 1, // Lifespan of the particle (1 = 100%)
+                        color: heartColors[Math.floor(Math.random() * heartColors.length)], // Pick a random color
+                        type: 'heart' // (NEW) Specify particle type
+                    });
+                }
+            }
+            
+            // (NEW) Function to create a burst of confetti
+            function triggerConfetti() {
+                const confettiCount = 200; // Lots of confetti!
+                const explosionX = canvas.width / 2;
+                const explosionY = canvas.height / 2;
+
+                for (let i = 0; i < confettiCount; i++) {
+                    const angle = Math.random() * Math.PI * 2; // Random angle
+                    const speed = Math.random() * 8 + 4; // Random speed (4-12)
+                    
+                    particles.push({
+                        x: explosionX,
+                        y: explosionY,
+                        size: Math.random() * 8 + 4, // Random width
+                        sizeH: Math.random() * 6 + 4, // Random height
+                        speedX: Math.cos(angle) * speed,
+                        speedY: Math.sin(angle) * speed - 4, // Add an upward boost
+                        opacity: 1,
+                        life: 1.5, // Lives a bit longer
+                        color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+                        type: 'confetti', // (NEW) Specify particle type
+                        angle: Math.random() * Math.PI * 2, // Random rotation
+                        spin: Math.random() * 0.2 - 0.1 // Random spin speed
+                    });
+                }
+            }
+
+            // The main animation loop that runs every frame
+            function animate() {
+                // Clear the canvas on each frame so we can draw fresh hearts
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    
+                    // Update particle's position based on its speed
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    
+                    // Add a little "gravity" to make them fall
+                    p.speedY += 0.05;
+                    
+                    // (NEW) Add friction/drag
+                    p.speedX *= 0.99;
+                    p.speedY *= 0.99;
+                    
+                    // Decrease life and opacity to make them fade out
+                    p.life -= 0.015; // Fade a bit slower
+                    p.opacity -= 0.015;
+
+                    // (NEW) Update rotation for confetti
+                    if (p.type === 'confetti') {
+                        p.angle += p.spin;
+                    }
+
+                    // If the particle is still "alive", draw it
+                    if (p.life > 0) {
+                        // (NEW) Check particle type to decide how to draw
+                        if (p.type === 'heart') {
+                            drawHeart(p.x, p.y, p.size, p.opacity, p.color);
+                        } else if (p.type === 'confetti') {
+                            drawConfetti(p);
+                        }
+                    } else {
+                        // Remove the "dead" particle from our array
+                        particles.splice(i, 1);
+                        i--; // Adjust index after removal to avoid skipping a particle
+                    }
+                }
+
+                // Request the next frame to continue the animation
+                requestAnimationFrame(animate);
+            }
+
+            // Listen for a click (desktop) or a touch (mobile) to trigger the hearts
+            // We set 'pointer-events: auto' on the body to make sure it captures the click
+            document.body.style.pointerEvents = 'auto';
+            window.addEventListener('click', createHearts);
+            window.addEventListener('touchstart', createHearts);
+
+            // Start the animation loop!
+            animate();
+
+            // ... existing code ... -->
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+
+            // --- 3. (NEW) Birthday Cake Celebration ---
+            
+            // Get all the new elements
+            const celebrateBtn = document.getElementById('celebrateBtn');
+            const cakeModal = document.getElementById('cakeModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const flames = document.querySelectorAll('.flame');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalInstruction = document.getElementById('modalInstruction');
+            const birthdayCake = document.getElementById('birthdayCake'); // (NEW)
+            
+            let candlesOut = 0;
+            
+            // Create the music synth
+            const synth = new Tone.Synth().toDestination();
+
+            // Notes for "Happy Birthday"
+            const birthdayMelody = [
+                { note: 'G4', duration: '8n', time: '0:0' },
+                { note: 'G4', duration: '8n', time: '0:1' },
+                { note: 'A4', duration: '4n', time: '0:2' },
+                { note: 'G4', duration: '4n', time: '0:3' },
+                { note: 'C5', duration: '4n', time: '1:0' },
+                { note: 'B4', duration: '2n', time: '1:2' },
+
+                { note: 'G4', duration: '8n', time: '2:0' },
+                { note: 'G4', duration: '8n', time: '2:1' },
+                { note: 'A4', duration: '4n', time: '2:2' },
+                { note: 'G4', duration: '4n', time: '2:3' },
+                { note: 'D5', duration: '4n', time: '3:0' },
+                { note: 'C5', duration: '2n', time: '3:2' },
+
+                { note: 'G4', duration: '8n', time: '4:0' },
+                { note: 'G4', duration: '8n', time: '4:1' },
+                { note: 'G5', duration: '4an', time: '4:2' },
+                { note: 'E5', duration: '4n', time: '4:3' },
+                { note: 'C5', duration: '4n', time: '5:0' },
+                { note: 'B4', duration: '4n', time: '5:1' },
+                { note: 'A4', duration: '2n', time: '5:2' },
+
+                { note: 'F5', duration: '8n', time: '6:0' },
+                { note: 'F5', duration: '8n', time: '6:1' },
+                { note: 'E5', duration: '4n', time: '6:2' },
+                { note: 'C5', duration: '4n', time: '6:3' },
+                { note: 'D5', duration: '4n', time: '7:0' },
+                { note: 'C5', duration: '2n', time: '7:2' },
+            ];
+            
+            // Create the sequence
+            const birthdaySong = new Tone.Part((time, value) => {
+                synth.triggerAttackRelease(value.note, value.duration, time);
+            }, birthdayMelody);
+            
+            // Loop the song
+            birthdaySong.loop = true;
+            birthdaySong.loopEnd = '8m'; // Loop the full 8 measures
+            Tone.Transport.bpm.value = 100; // Set a nice tempo
+
+            // (MODIFIED) Create a named function for cake cutting
+            function handleCakeCutInteraction(event) {
+                handleInteraction(event, cutTheCake);
+            }
+
+            // Function to open the cake modal
+            async function openCakeModal() {
+                // Must start Tone.js on a user gesture
+                await Tone.start();
+                
+                // Reset state
+                modalTitle.innerText = "Make a wish...";
+                modalInstruction.innerText = "Click the flames to blow them out!";
+                flames.forEach(f => f.classList.remove('flame-out'));
+                birthdayCake.classList.remove('clickable'); // (NEW)
+                birthdayCake.classList.remove('cut'); // (NEW)
+                // (MODIFIED) Remove the named listener
+                birthdayCake.removeEventListener('click', handleCakeCutInteraction); 
+                birthdayCake.removeEventListener('touchstart', handleCakeCutInteraction);
+                candlesOut = 0;
+                
+                // (MODIFIED) Use classList to show modal
+                cakeModal.classList.add('open');
+                
+                // Start the music
+                Tone.Transport.start();
+                birthdaySong.start(0);
+            }
+
+            // Function to close the cake modal
+            function closeCakeModal() {
+                // (MODIFIED) Use classList to hide modal
+                cakeModal.classList.remove('open');
+                // Stop the music
+                Tone.Transport.stop();
+                birthdaySong.stop(0);
+            }
+
+            // (NEW) Function to handle the cake cutting
+            function cutTheCake() {
+                // Add cut animation
+                birthdayCake.classList.add('cut');
+                birthdayCake.classList.remove('clickable'); // No more clicks
+
+                // Final message
+                modalTitle.innerText = "Happy Birthday, Love!";
+                modalInstruction.innerText = "Your wish is on its way... ❤️";
+                
+                // (MODIFIED) Remove the named listener
+                birthdayCake.removeEventListener('click', handleCakeCutInteraction);
+                birthdayCake.removeEventListener('touchstart', handleCakeCutInteraction);
+                
+                // (MODIFIED) Wait 500ms, then close modal & fire confetti
+                setTimeout(() => {
+                    closeCakeModal();
+                    triggerConfetti();
+                }, 500);
+            }
+
+            // (MODIFIED) Helper to prevent double events on touch
+            function handleInteraction(event, action) {
+                event.preventDefault(); // Stop click from firing after touch
+                action(event); // Run the desired function
+            }
+
+            // Event listener for the celebrate button
+            celebrateBtn.addEventListener('click', (e) => handleInteraction(e, openCakeModal));
+            celebrateBtn.addEventListener('touchstart', (e) => handleInteraction(e, openCakeModal));
+            
+            // Event listener for the close button
+            closeModalBtn.addEventListener('click', (e) => handleInteraction(e, closeCakeModal));
+            closeModalBtn.addEventListener('touchstart', (e) => handleInteraction(e, closeCakeModal));
+
+            // (NEW) Function to handle blowing out a flame
+            function blowOutFlame(event) {
+                // 'this' will be the flame element that was clicked/touched
+                if (!this.classList.contains('flame-out')) {
+                    this.classList.add('flame-out');
+                    candlesOut++;
+                }
+                
+                // Check if all candles are out
+                if (candlesOut === flames.length) {
+                    modalTitle.innerText = "Wish Made!";
+                    modalInstruction.innerText = "Now, tap the cake to cut it!";
+                    
+                    birthdayCake.classList.add('clickable');
+                    // (MODIFIED) Add listeners using the *named function*
+                    birthdayCake.addEventListener('click', handleCakeCutInteraction);
+                    birthdayCake.addEventListener('touchstart', handleCakeCutInteraction);
+                }
+            }
+
+            // Event listeners for each flame
+            flames.forEach(flame => {
+                // (MODIFIED) Add both click and touch listeners for the flames
+                flame.addEventListener('click', (e) => handleInteraction(e, blowOutFlame.bind(flame)));
+                flame.addEventListener('touchstart', (e) => handleInteraction(e, blowOutFlame.bind(flame)));
+            });
+        
+        }); // --- End of DOMContentLoaded wrapper ---
 
     </script>
 </body>
