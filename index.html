@@ -538,6 +538,25 @@
             animation: flicker 0.5s infinite alternate;
             box-shadow: 0 0 10px #ffc107, 0 0 20px #ffc107;
             transition: all 0.3s ease;
+            /* (NEW) Ensure flame is above its tap target */
+            z-index: 2;
+        }
+
+        /* (NEW) Invisible tap target for mobile */
+        .flame::before {
+            content: '';
+            position: absolute;
+            /* Create a 44x44px invisible box */
+            width: 44px;
+            height: 44px;
+            /* Center it on the 12x20px flame */
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: transparent; /* Makes it invisible */
+            border-radius: 50%;
+            /* Put it "behind" the visible flame */
+            z-index: -1;
         }
 
         .flame:hover {
@@ -555,6 +574,49 @@
         .flame-out {
             display: none !important;
         }
+
+        /* --- 12. (NEW) Gemini Feature Styles --- */
+        .gemini-btn {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem; /* Smaller than celebrate button */
+            font-weight: 600;
+            color: #ffffff;
+            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Blue/Purple theme */
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px; /* Smaller padding */
+            margin-top: 25px; /* Space it out */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+            z-index: 10;
+            position: relative;
+        }
+
+        .gemini-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .gemini-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .poem-box {
+            display: none; /* Hidden by default */
+            margin-top: 25px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border: 1px solid #667eea; /* Match button color */
+            font-style: italic;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap; /* Preserves newlines from the poem */
+            text-align: center; /* Center the poem text */
+        }
+
     </style>
 </head>
 <body>
@@ -606,6 +668,14 @@
             <p>
                 Every single moment with you is a gift. From our late-night talks to our silly adventures, you make every day feel special. I'm so incredibly lucky to call you mine.
             </p>
+
+            <!-- (NEW) Gemini Poem Feature -->
+            <button id="geminiPoemBtn" class="gemini-btn" data-aos="fade-up" data-aos-delay="100">✨ A Poem For You</button>
+            <div id="poemBox" class="poem-box">
+                <p id="poemText"></p>
+            </div>
+            <!-- End Gemini Feature -->
+
         </div>
     </section>
     
@@ -826,7 +896,7 @@
                         speedX: Math.cos(angle) * speed,
                         speedY: Math.sin(angle) * speed - 4, // Add an upward boost
                         opacity: 1,
-                        life: 1.5, // Lives a bit longer
+                        life: 3.0, // (MODIFIED) Lives much longer
                         color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
                         type: 'confetti', // (NEW) Specify particle type
                         angle: Math.random() * Math.PI * 2, // Random rotation
@@ -848,15 +918,15 @@
                     p.y += p.speedY;
                     
                     // Add a little "gravity" to make them fall
-                    p.speedY += 0.05;
+                    p.speedY += 0.02; // (MODIFIED) Reduced gravity
                     
                     // (NEW) Add friction/drag
-                    p.speedX *= 0.99;
-                    p.speedY *= 0.99;
+                    p.speedX *= 0.995; // (MODIFIED) Reduced drag
+                    p.speedY *= 0.995; // (MODIFIED) Reduced drag
                     
                     // Decrease life and opacity to make them fade out
-                    p.life -= 0.015; // Fade a bit slower
-                    p.opacity -= 0.015;
+                    p.life -= 0.005; // (MODIFIED) Fade 3x slower
+                    p.opacity -= 0.005; // (MODIFIED) Fade 3x slower
 
                     // (NEW) Update rotation for confetti
                     if (p.type === 'confetti') {
@@ -897,7 +967,84 @@
                 canvas.height = window.innerHeight;
             });
 
-            // --- 3. (NEW) Birthday Cake Celebration ---
+
+            // (MODIFIED) Helper to prevent double events on touch
+            // We define this earlier so it can be used by all features
+            function handleInteraction(event, action) {
+                event.preventDefault(); // Stop click from firing after touch
+                action(event); // Run the desired function
+            }
+
+
+            // --- 3. (NEW) Gemini Poem Feature ---
+            
+            const geminiPoemBtn = document.getElementById('geminiPoemBtn');
+            const poemBox = document.getElementById('poemBox');
+            const poemText = document.getElementById('poemText');
+
+            geminiPoemBtn.addEventListener('click', (e) => handleInteraction(e, getGeminiPoem));
+            geminiPoemBtn.addEventListener('touchstart', (e) => handleInteraction(e, getGeminiPoem));
+
+            async function getGeminiPoem() {
+                // 1. Set Loading State
+                geminiPoemBtn.disabled = true;
+                geminiPoemBtn.innerText = "Writing...";
+                poemBox.style.display = 'none'; // Hide old one
+                poemText.innerText = "";
+
+                // 2. Define API details
+                const apiKey = ""; // Leave as-is, will be populated by the environment
+                const apiUrl = `https://generativanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                // --- IMPORTANT! ---
+                // Change "Maria" in the line below to your girlfriend's name!
+                // (MODIFIED as per your last request)
+                const userPrompt = "Write a romantic long-distance love poem for my girlfriend Maria's birthday. The tone should be sweet, personal, and celebratory, reflecting our love despite the distance.";
+                // ------------------
+
+                const payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }]
+                };
+
+                // 3. Call the API
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    let generatedText = "Could not generate a poem right now, but my love for you is 100% real! ❤️"; // Fallback
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        generatedText = candidate.content.parts[0].text;
+                    }
+
+                    // 4. Display the result
+                    poemText.innerText = generatedText;
+                    poemBox.style.display = 'block';
+                    AOS.refreshHard(); // Make sure the new box animates in
+
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    poemText.innerText = "There was an error writing the poem... but I still love you! ❤️";
+                    poemBox.style.display = 'block';
+                    AOS.refreshHard();
+                } finally {
+                    // 5. Reset button state
+                    geminiPoemBtn.disabled = false;
+                    geminiPoemBtn.innerText = "✨ Write Another Poem";
+                }
+            }
+
+
+            // --- 4. Birthday Cake Celebration ---
             
             // Get all the new elements
             const celebrateBtn = document.getElementById('celebrateBtn');
@@ -1012,12 +1159,6 @@
                     closeCakeModal();
                     triggerConfetti();
                 }, 500);
-            }
-
-            // (MODIFIED) Helper to prevent double events on touch
-            function handleInteraction(event, action) {
-                event.preventDefault(); // Stop click from firing after touch
-                action(event); // Run the desired function
             }
 
             // Event listener for the celebrate button
